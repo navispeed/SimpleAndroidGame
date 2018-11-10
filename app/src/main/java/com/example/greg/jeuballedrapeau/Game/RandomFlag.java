@@ -1,19 +1,23 @@
 package com.example.greg.jeuballedrapeau.Game;
 
 import android.annotation.SuppressLint;
+import android.os.Handler;
 import android.util.Pair;
 import com.example.greg.jeuballedrapeau.Entity.Flag;
 import com.example.greg.jeuballedrapeau.Helpers.SetTimeout;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomFlag implements Game {
 
+    private static final Random r = new Random();
     private RandomFlagListener listener;
     private Map<Integer, Flag> flagById;
+    private Long millis;
+    private Pair<Integer, Integer> screenSize;
 
     /**
      * Definition d'un listener pour respecter les règles de l'OO
@@ -22,12 +26,26 @@ public class RandomFlag implements Game {
         void putFlagOn(Integer id, Flag f);
 
         void updateFlag(Integer id, Flag f);
+
+        void updateTime(Integer tick);
     }
 
     @SuppressLint("UseSparseArrays")
     @Override
-    public void run() {
+    public void run(Pair<Integer, Integer> screenSize) {
         this.flagById = new HashMap<>();
+        this.screenSize = screenSize;
+        this.millis = System.currentTimeMillis();
+        Handler handler = new Handler();
+        int delay = 100; //milliseconds
+
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                listener.updateTime(Math.round(System.currentTimeMillis() - millis));
+                moveAll();
+                handler.postDelayed(this, delay);
+            }
+        }, delay);
     }
 
     @Override
@@ -47,9 +65,9 @@ public class RandomFlag implements Game {
     /**
      * Ajout un flag de couleur aléatoire
      */
-    public synchronized void addRandomFlag(Pair<Integer, Integer> screenSize) {
+    public void addRandomFlag() {
         final int id = flagById.size();
-        final Flag flag = new Flag(ThreadLocalRandom.current().nextInt(0, screenSize.first - Flag.getSize()), ThreadLocalRandom.current().nextInt(0, screenSize.second - Flag.getSize()));
+        final Flag flag = new Flag(id, ThreadLocalRandom.current().nextInt(0, screenSize.first - Flag.getSize()), ThreadLocalRandom.current().nextInt(0, screenSize.second - Flag.getSize()));
         this.flagById.put(id, flag);
         this.listener.putFlagOn(id, flag);
     }
@@ -63,6 +81,15 @@ public class RandomFlag implements Game {
             flag.disable();
             SetTimeout.apply(() -> this.listener.updateFlag(entry.getKey(), flag), delay[0]);
             delay[0] += 100;
+        });
+    }
+
+    private void moveAll() {
+        this.flagById.entrySet().stream().filter(entry -> !entry.getValue().isDisabled()).forEach(entry -> {
+            final Flag f = entry.getValue();
+            f.setX((f.getX() + f.getSpeedVector().first) % this.screenSize.first);
+            f.setY((f.getY() + f.getSpeedVector().second) % this.screenSize.second);
+            this.listener.updateFlag(entry.getKey(), f);
         });
     }
 

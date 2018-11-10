@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import com.example.greg.jeuballedrapeau.Entity.Flag;
 import com.example.greg.jeuballedrapeau.Game.RandomFlag;
 import com.example.greg.jeuballedrapeau.R;
@@ -22,8 +23,10 @@ import java.util.Map;
 public class RandomFlagActivity extends AbstractGameActivity<RandomFlag> implements RandomFlag.RandomFlagListener {
 
     private View view;
+    private TextView timer;
     private Pair<Integer, Integer> size;
     private Map<Integer, ImageView> imageById;
+
 
     @SuppressLint("UseSparseArrays")
     public RandomFlagActivity() {
@@ -36,12 +39,12 @@ public class RandomFlagActivity extends AbstractGameActivity<RandomFlag> impleme
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_random_flag);
         this.view = findViewById(R.id.randomFlagContainer);
+        this.timer = findViewById(R.id.timer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        this.getGame().run();
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> {
-            this.getGame().addRandomFlag(size);
+            this.getGame().addRandomFlag();
         });
         this.getGame().setListener(this);
     }
@@ -52,6 +55,7 @@ public class RandomFlagActivity extends AbstractGameActivity<RandomFlag> impleme
         //Here you can get the size!
         Log.d("RandomFlagActivity", "Size");
         this.size = new Pair<>(view.getWidth(), view.getHeight());
+        this.getGame().run(size);
     }
 
     @Override
@@ -77,14 +81,26 @@ public class RandomFlagActivity extends AbstractGameActivity<RandomFlag> impleme
     }
 
     @Override
-    public void updateFlag(Integer id, Flag f) {
+    public synchronized void updateFlag(Integer id, Flag f) {
+        final Drawable drawable = ContextCompat.getDrawable(this, f.getDrawableId());
         runOnUiThread(() -> {
             final ImageView img = this.imageById.get(id);
 
-            final Drawable drawable = ContextCompat.getDrawable(this, f.getDrawableId());
+
             img.setImageDrawable(drawable);
+            img.setX(f.getX());
+            img.setY(f.getY());
 
             Log.d("Flag updated : ", f.toString());
+        });
+    }
+
+    @SuppressLint("DefaultLocale")
+    @Override
+    public void updateTime(Integer tick) {
+        runOnUiThread(() -> {
+            final int seconds = tick / 1000;
+            this.timer.setText(String.format("%2d:%d", seconds / 60, seconds % 60));
         });
     }
 }

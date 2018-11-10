@@ -11,6 +11,10 @@
     <FrameLayout
         android:id="@+id/randomFlagContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        tools:layout_editor_absoluteX="53dp"
+        tools:layout_editor_absoluteY="88dp">
+
+    </FrameLayout>
 
 </android.support.constraint.ConstraintLayout>
