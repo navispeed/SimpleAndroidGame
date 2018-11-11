@@ -4,9 +4,11 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.util.Pair;
 import com.example.greg.jeuballedrapeau.Entity.Flag;
-import com.example.greg.jeuballedrapeau.Helpers.SetTimeout;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -25,7 +27,7 @@ public class RandomFlag implements Game {
     public interface RandomFlagListener {
         void putFlagOn(Integer id, Flag f);
 
-        void updateFlag(Integer id, Flag f);
+        void updateFlags(List<Pair<Integer, Flag>> flags);
 
         void updateTime(Integer tick);
     }
@@ -41,7 +43,7 @@ public class RandomFlag implements Game {
 
         handler.postDelayed(new Runnable() {
             public void run() {
-                listener.updateTime(Math.round(System.currentTimeMillis() - millis));
+                listener.updateTime(Math.round(System.currentTimeMillis() - millis)); // On met à jour le timer avec le temps écoulé
                 moveAll();
                 handler.postDelayed(this, delay);
             }
@@ -74,14 +76,17 @@ public class RandomFlag implements Game {
 
     public void sendClick(Integer id) {
 
-        final int[] delay = {500}; //Multithread
-
-        flagById.entrySet().stream().filter(entry -> !entry.getValue().isDisabled()).forEach(entry -> {
-            final Flag flag = entry.getValue();
-            flag.disable();
-            SetTimeout.apply(() -> this.listener.updateFlag(entry.getKey(), flag), delay[0]);
-            delay[0] += 100;
-        });
+//        final int[] delay = {500}; //Multithread
+//
+//        flagById.entrySet().stream().filter(entry -> !entry.getValue().isDisabled()).forEach(entry -> {
+//            final Flag flag = entry.getValue();
+//            flag.disable();
+//            SetTimeout.apply(() -> this.listener.updateFlag(entry.getKey(), flag), delay[0]);
+//            delay[0] += 100;
+//        });
+        final Flag flag = this.flagById.get(id);
+        flag.disable();
+        this.listener.updateFlags(Collections.singletonList(Pair.create(id, flag)));
     }
 
     private void moveAll() {
@@ -89,7 +94,7 @@ public class RandomFlag implements Game {
             final Flag f = entry.getValue();
             f.setX((f.getX() + f.getSpeedVector().first) % this.screenSize.first);
             f.setY((f.getY() + f.getSpeedVector().second) % this.screenSize.second);
-            this.listener.updateFlag(entry.getKey(), f);
+            this.listener.updateFlags(Collections.singletonList(Pair.create(entry.getKey(), f)));
         });
     }
 
